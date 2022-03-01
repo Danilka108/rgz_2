@@ -1,1 +1,1 @@
-gcc ./main.cpp -lstdc++ -lm  -o main && ./main
+gcc ./main.cpp -lstdc++ -lm  -o main.out && ./main.out

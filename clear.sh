@@ -1,1 +1,1 @@
-rm -rf *.txt *.bin
+rm -rf *.txt *.bin *.out
