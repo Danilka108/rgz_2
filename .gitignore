@@ -1,2 +1,2 @@
-/tests/txt/*
-/tests/bin/*
+/tests/txt/*.txt
+/tests/bin/*.txt
