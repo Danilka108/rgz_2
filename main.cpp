@@ -2,8 +2,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 const char STR_DELIMITER = '\n';
 
@@ -43,7 +41,7 @@ char *readStringFromTxt(FileString *);
 
 void writeStringToTxt(FILE *, char *);
 
-FilesMetadata *sortMetadataByMerge(FilesMetadata *,
+void sortMetadataByMerge(FilesMetadata *,
                                    bool (*)(FileString *,
                                             FileString *));
 
@@ -61,13 +59,13 @@ void sortFilesStrings(TXT_FILE_SIGNATURE, const char *,
 void sortFilesStrings(BIN_FILE_SIGNATURE _, const char *,
                       void (*)(FilesMetadata *), ...);
 
-void build_txt_test_data(const char *, ...);
+void buildTxtTestData(const char *, ...);
 
-void build_bin_test_data(const char *, ...);
+void buildBinTestData(const char *, ...);
 
-void test_txt();
+void testTxt();
 
-void test_bin();
+void testBin();
 
 void test();
 
@@ -252,7 +250,7 @@ void writeStringToTxt(FILE *destFile, char *str) {
     fputc('\n', destFile);
 }
 
-FilesMetadata *sortMetadataByMerge(FilesMetadata *metadata,
+void sortMetadataByMerge(FilesMetadata *metadata,
                                    bool (*predicate)(FileString *,
                                                      FileString *)) {
     int blockSize, blockStartPos, leftBorder, middleBorder, rightBorder,
@@ -388,7 +386,7 @@ void sortFilesStrings(BIN_FILE_SIGNATURE _, const char *dest,
     va_end(vaList);
 }
 
-void build_txt_test_data(const char *dist, ...) {
+void buildTxtTestData(const char *dist, ...) {
     va_list vaList;
     va_start(vaList, dist);
 
@@ -402,7 +400,7 @@ void build_txt_test_data(const char *dist, ...) {
     va_end(vaList);
 }
 
-void build_bin_test_data(const char *dist, ...) {
+void buildBinTestData(const char *dist, ...) {
     va_list vaList;
     va_start(vaList, dist);
 
@@ -416,98 +414,93 @@ void build_bin_test_data(const char *dist, ...) {
     va_end(vaList);
 }
 
-void test_txt() {
-    build_txt_test_data("tests/txt/test1_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+void testTxt() {
+    buildTxtTestData("tests/txt/test1_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output1_1.txt", sortByDescending, "tests/txt/test1_1_1.txt", NULL);
 
-    build_txt_test_data("tests/txt/test1_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    build_txt_test_data("tests/txt/test1_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    build_txt_test_data("tests/txt/test1_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    buildTxtTestData("tests/txt/test1_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    buildTxtTestData("tests/txt/test1_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    buildTxtTestData("tests/txt/test1_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output1_2.txt", sortByDescending, "tests/txt/test1_2_1.txt",
                      "tests/txt/test1_2_2.txt", "tests/txt/test1_2_3.txt",
                      NULL);
 
-    build_txt_test_data("tests/txt/test1_3_1.txt", "", NULL);
-    build_txt_test_data("tests/txt/test1_3_2.txt", "sdf", "q", "werinwi ai", NULL);
+    buildTxtTestData("tests/txt/test1_3_1.txt", "", NULL);
+    buildTxtTestData("tests/txt/test1_3_2.txt", "sdf", "q", "werinwi ai", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output1_3.txt", sortByDescending, "tests/txt/test1_3_1.txt",
                      "tests/txt/test1_3_2.txt", NULL);
 
-    build_txt_test_data("tests/txt/test1_4_1.txt", "", NULL);
-    build_txt_test_data("tests/txt/test1_4_2.txt", "", NULL);
+    buildTxtTestData("tests/txt/test1_4_1.txt", "", NULL);
+    buildTxtTestData("tests/txt/test1_4_2.txt", "", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output1_4.txt", sortByDescending, "tests/txt/test1_4_1.txt",
                      "tests/txt/test1_4_2.txt", NULL);
 
-    build_txt_test_data("tests/txt/test2_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+    buildTxtTestData("tests/txt/test2_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output2_1.txt", sortByAscending, "tests/txt/test2_1_1.txt", NULL);
 
-    build_txt_test_data("tests/txt/test2_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    build_txt_test_data("tests/txt/test2_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    build_txt_test_data("tests/txt/test2_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    buildTxtTestData("tests/txt/test2_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    buildTxtTestData("tests/txt/test2_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    buildTxtTestData("tests/txt/test2_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output2_2.txt", sortByAscending, "tests/txt/test2_2_1.txt",
                      "tests/txt/test2_2_2.txt", "tests/txt/test2_2_3.txt",
                      NULL);
 
-    build_txt_test_data("tests/txt/test2_3_1.txt", "", NULL);
-    build_txt_test_data("tests/txt/test2_3_2.txt", "sdf", "q", "werinwi ai", NULL);
+    buildTxtTestData("tests/txt/test2_3_1.txt", "", NULL);
+    buildTxtTestData("tests/txt/test2_3_2.txt", "sdf", "q", "werinwi ai", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output2_3.txt", sortByAscending, "tests/txt/test2_3_1.txt",
                      "tests/txt/test2_3_2.txt", NULL);
 
-    build_txt_test_data("tests/txt/test2_4_1.txt", "", NULL);
-    build_txt_test_data("tests/txt/test2_4_2.txt", "", NULL);
+    buildTxtTestData("tests/txt/test2_4_1.txt", "", NULL);
+    buildTxtTestData("tests/txt/test2_4_2.txt", "", NULL);
     sortFilesStrings(TXT_FILE, "tests/txt/output2_4.txt", sortByAscending, "tests/txt/test2_4_1.txt",
                      "tests/txt/test2_4_2.txt", NULL);
 }
 
-void test_bin() {
-    build_bin_test_data("tests/bin/test1_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+void testBin() {
+    buildBinTestData("tests/bin/test1_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output1_1.bin", sortByDescending, "tests/bin/test1_1_1.bin", NULL);
 
-    build_bin_test_data("tests/bin/test1_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    build_bin_test_data("tests/bin/test1_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    build_bin_test_data("tests/bin/test1_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    buildBinTestData("tests/bin/test1_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    buildBinTestData("tests/bin/test1_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    buildBinTestData("tests/bin/test1_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output1_2.bin", sortByDescending, "tests/bin/test1_2_1.bin",
                      "tests/bin/test1_2_2.bin", "tests/bin/test1_2_3.bin",
                      NULL);
 
-    build_bin_test_data("tests/bin/test1_3_1.bin", "", NULL);
-    build_bin_test_data("tests/bin/test1_3_2.bin", "sdf", "q", "werinwi ai", NULL);
+    buildBinTestData("tests/bin/test1_3_1.bin", "", NULL);
+    buildBinTestData("tests/bin/test1_3_2.bin", "sdf", "q", "werinwi ai", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output1_3.bin", sortByDescending, "tests/bin/test1_3_1.bin",
                      "tests/bin/test1_3_2.bin", NULL);
 
-    build_bin_test_data("tests/bin/test1_4_1.bin", "", NULL);
-    build_bin_test_data("tests/bin/test1_4_2.bin", "", NULL);
+    buildBinTestData("tests/bin/test1_4_1.bin", "", NULL);
+    buildBinTestData("tests/bin/test1_4_2.bin", "", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output1_4.bin", sortByDescending, "tests/bin/test1_4_1.bin",
                      "tests/bin/test1_4_2.bin", NULL);
 
-    build_bin_test_data("tests/bin/test2_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+    buildBinTestData("tests/bin/test2_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output2_1.bin", sortByAscending, "tests/bin/test2_1_1.bin", NULL);
 
-    build_bin_test_data("tests/bin/test2_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    build_bin_test_data("tests/bin/test2_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    build_bin_test_data("tests/bin/test2_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    buildBinTestData("tests/bin/test2_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    buildBinTestData("tests/bin/test2_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    buildBinTestData("tests/bin/test2_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output2_2.bin", sortByAscending, "tests/bin/test2_2_1.bin",
                      "tests/bin/test2_2_2.bin", "tests/bin/test2_2_3.bin",
                      NULL);
 
-    build_bin_test_data("tests/bin/test2_3_1.bin", "", NULL);
-    build_bin_test_data("tests/bin/test2_3_2.bin", "sdf", "q", "werinwi ai", NULL);
+    buildBinTestData("tests/bin/test2_3_1.bin", "", NULL);
+    buildBinTestData("tests/bin/test2_3_2.bin", "sdf", "q", "werinwi ai", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output2_3.bin", sortByAscending, "tests/bin/test2_3_1.bin",
                      "tests/bin/test2_3_2.bin", NULL);
 
-    build_bin_test_data("tests/bin/test2_4_1.bin", "", NULL);
-    build_bin_test_data("tests/bin/test2_4_2.bin", "", NULL);
+    buildBinTestData("tests/bin/test2_4_1.bin", "", NULL);
+    buildBinTestData("tests/bin/test2_4_2.bin", "", NULL);
     sortFilesStrings(BIN_FILE, "tests/bin/output2_4.bin", sortByAscending, "tests/bin/test2_4_1.bin",
                      "tests/bin/test2_4_2.bin", NULL);
 }
 
-struct stat st = {0};
-
 void test() {
-    //if (stat("./tests/txt", &st) == -1) mkdir("./tests/txt", 0777);
-    //if (stat("./tests/bin", &st) == -1) mkdir("./tests/bin", 0777);
-
-    test_txt();
-    test_bin();
+    testTxt();
+    testBin();
     /*
                     testX_X_X.xxx
                         ^ ^ ^
