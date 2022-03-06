@@ -1,2 +1,3 @@
-/tests/txt/*.txt
-/tests/bin/*.txt
+**/*.txt
+**/*.txt
+**/*.out
