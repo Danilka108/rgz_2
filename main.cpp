@@ -265,7 +265,7 @@ void sort_by_ascending(File_metadata *metadata) {
 void sort_files_strings(TXT_FILE_SIGNATURE _, const char *dest,
                         void (*sort_metadata)(File_metadata *), ...) {
     va_list args;
-            va_start(args, sort_metadata);
+    va_start(args, sort_metadata);
 
     File_metadata *metadata = new File_metadata[1];
 
@@ -306,7 +306,7 @@ void sort_files_strings(TXT_FILE_SIGNATURE _, const char *dest,
         fclose(file);
     }
 
-            va_end(args);
+    va_end(args);
     fclose(dest_file);
     delete[] metadata;
 }
@@ -314,7 +314,7 @@ void sort_files_strings(TXT_FILE_SIGNATURE _, const char *dest,
 void sort_files_strings(BIN_FILE_SIGNATURE _, const char *dest,
                         void (*sort_metadata)(File_metadata *), ...) {
     va_list args;
-            va_start(args, sort_metadata);
+    va_start(args, sort_metadata);
 
     File_metadata *metadata = new File_metadata[1];
 
@@ -357,7 +357,7 @@ void sort_files_strings(BIN_FILE_SIGNATURE _, const char *dest,
         fclose(file);
     }
 
-            va_end(args);
+    va_end(args);
     fclose(dest_file);
     delete[] metadata;
 }
