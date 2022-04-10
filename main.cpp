@@ -2,71 +2,78 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 
+// Разделитель строк
 const char STR_DELIMITER = '\n';
 
+// Тип для фиктивного аргумента функции. Необходим для перегрузки.
+// Сигнатура текстого файла.
 struct TXT_FILE_SIGNATURE {
 };
 const TXT_FILE_SIGNATURE TXT_FILE = TXT_FILE_SIGNATURE();
 
+// Тип для фиктивного аргумента функции. Необходим для перегрузки.
+// Сигнатура бинарного файла.
 struct BIN_FILE_SIGNATURE {
 };
 const BIN_FILE_SIGNATURE BIN_FILE = BIN_FILE_SIGNATURE();
 
-struct FileString;
+// Структура, хранящая длину строки, ее сдвиг в файле и название файла, к которому принадлежит строка. Т.е. метаданные строки файла.
+struct File_string;
 
-struct FilesMetadata;
+// Структура, хранящая массив данных о строках и длину массива. Т.е. метаданные файлов.
+struct File_metadata;
 
-void pushString(FilesMetadata *, FileString);
+// Добавление данных о строке в файловые метаданные.
+void push_string(File_metadata*, File_string);
 
-void concatFileMetadata(FilesMetadata *, FilesMetadata *);
+// Объединение файловых метаданных.
+void concat_files_metadata(File_metadata*, File_metadata*);
 
-FILE *createBinFile(const char *);
+// Получение матаданных бинарного файла.
+File_metadata* get_bin_file_metadata(FILE*, const char *);
 
-FILE *openBinFile(const char *);
+// Получение матаданных текстового файла.
+File_metadata* get_txt_file_metadata(FILE*, const char*);
 
-FilesMetadata *getBinFileMetadata(FILE *);
+// Вывод бинарного файла для тестирования.
+void print_bin_file(const char *);
 
-char *readStringFromBin(FileString *);
+// Прочтение строки из файла, используя данные о строке.
+char* read_string(FILE *,File_string*);
 
-void writeStringToBin(FILE *, char *);
+// Сортировка метаданных методом слияния.
+void sort_metadata_by_merge(File_metadata*,
+                            bool, int, int);
 
-FILE *createTxtFile(const char *);
+// Сортировка по убыванию.
+void sort_by_descending(File_metadata*);
 
-FILE *openTxtFile(const char *);
+// Сортировка по возрастанию.
+void sort_by_ascending(File_metadata*);
 
-FilesMetadata *getTxtFileMetadata(FILE *);
+// Сортировка строк текстовых файлов с выводом в один файл.
+void sort_files_strings(TXT_FILE_SIGNATURE, const char*,
+                      void (*)(File_metadata*), ...);
 
-char *readStringFromTxt(FileString *);
+// Сортировка строк бинарных файлов с выводом в один файл.
+void sort_files_strings(BIN_FILE_SIGNATURE _, const char*,
+                      void (*)(File_metadata*), ...);
 
-void writeStringToTxt(FILE *, char *);
+// Не добавлять данную функцию в отчет.
+void build_txt_test_data(const char*, ...);
 
-void sortMetadataByMerge(FilesMetadata *,
-                                   bool (*)(FileString *,
-                                            FileString *));
+// Не добавлять данную функцию в отчет.
+void build_bin_test_data(const char*, ...);
 
-bool isLess(FileString *, FileString *);
+// Не добавлять данную функцию в отчет.
+void test_txt();
 
-bool isGreater(FileString *, FileString *);
+// Не добавлять данную функцию в отчет.
+void test_bin();
 
-void sortByDescending(FilesMetadata *);
-
-void sortByAscending(FilesMetadata *);
-
-void sortFilesStrings(TXT_FILE_SIGNATURE, const char *,
-                      void (*)(FilesMetadata *), ...);
-
-void sortFilesStrings(BIN_FILE_SIGNATURE _, const char *,
-                      void (*)(FilesMetadata *), ...);
-
-void buildTxtTestData(const char *, ...);
-
-void buildBinTestData(const char *, ...);
-
-void testTxt();
-
-void testBin();
-
+// Не добавлять данную функцию в отчет.
 void test();
 
 int main() {
@@ -74,37 +81,37 @@ int main() {
     return 0;
 }
 
-struct FileString {
-    FILE *file;
+struct File_string {
+    const char *path;
     int offset;
     int len;
 
-    FileString() {}
+    File_string() {}
 
-    FileString(FILE *_file, int _offset, int _len) {
-        file = _file;
+    File_string(const char *_path, int _offset, int _len) {
+        path = _path;
         offset = _offset;
         len = _len;
     }
 };
 
-struct FilesMetadata {
-    FileString *strings;
+struct File_metadata {
+    File_string* strings;
     int len;
 
-    FilesMetadata(int _len = 0) {
-        strings = new FileString[_len];
+    File_metadata(int _len = 0) {
+        strings = new File_string[_len];
         len = _len;
     }
 
-    ~FilesMetadata() {
+    ~File_metadata() {
         if (len != 0)
             delete[] strings;
     }
 };
 
-void pushString(FilesMetadata *metadata, FileString string) {
-    FileString *new_strings = new FileString[metadata->len + 1];
+void push_string(File_metadata* metadata, File_string string) {
+    File_string* new_strings = new File_string[metadata->len + 1];
 
     for (int i = 0; i < metadata->len; i++)
         new_strings[i] = metadata->strings[i];
@@ -117,115 +124,69 @@ void pushString(FilesMetadata *metadata, FileString string) {
     metadata->len += 1;
 }
 
-void concatFileMetadata(FilesMetadata *metadata, FilesMetadata *additionMetadata) {
-    for (int i = 0; i < additionMetadata->len; i++)
-        pushString(metadata, additionMetadata->strings[i]);
+void concat_files_metadata(File_metadata *metadata, File_metadata* additional_metadata) {
+    for (int i = 0; i < additional_metadata->len; i++)
+        push_string(metadata, additional_metadata->strings[i]);
 
-    delete additionMetadata;
+    delete additional_metadata;
 }
 
-FILE *createBinFile(const char *src) {
-    FILE *file;
+File_metadata* get_bin_file_metadata(FILE *file, const char *src) {
+    File_metadata* metadata = new File_metadata();
 
-    if (!(file = fopen(src, "wb"))) {
-        printf("Error: %s file creating failure", src);
-        exit(EXIT_FAILURE);
-    }
+    int offset = 0, len = 0;
+    fseek(file, offset, SEEK_SET);
 
-    return file;
-}
+    while (fread(&len, sizeof(int), 1, file)) {
+        push_string(metadata,
+                   File_string(src, offset + sizeof(int), len));
 
-FILE *openBinFile(const char *src) {
-    FILE *file;
-
-    if (!(file = fopen(src, "rb"))) {
-        printf("Error: %s file opening failure", src);
-        exit(EXIT_FAILURE);
-    }
-
-    return file;
-}
-
-/**
- * Предпологается, что в конце строки бинарного файла отсутствует символ
- * разделения строк и длина строки считается без этого символа.
- */
-FilesMetadata *getBinFileMetadata(FILE *file) {
-    FilesMetadata *metadata = new FilesMetadata();
-
-    int stringOffset = 0, stringLen = 0;
-    fseek(file, stringOffset, SEEK_SET);
-
-    while (fread(&stringLen, sizeof(int), 1, file)) {
-        pushString(metadata,
-                   FileString(file, stringOffset + sizeof(int), stringLen));
-
-        stringOffset += sizeof(int) + stringLen * sizeof(char);
-        fseek(file, stringOffset, SEEK_SET);
+        offset += sizeof(int) + len * sizeof(char);
+        fseek(file, offset, SEEK_SET);
     }
 
     return metadata;
 }
 
-char *readStringFromBin(FileString *fileString) {
-    char *str = new char[fileString->len + 1];
-
-    fseek(fileString->file, fileString->offset, SEEK_SET);
-    fread(str, sizeof(char), fileString->len, fileString->file);
-
-    str[fileString->len] = '\0';
-
-    return str;
-}
-
-void writeStringToBin(FILE *file, char *str) {
-    int len = strlen(str);
-    fwrite(&len, sizeof(int), 1, file);
-    fwrite(str, sizeof(char), len, file);
-}
-
-FILE *createTxtFile(const char *src) {
+void print_bin_file(const char *path) {
     FILE *file;
-
-    if (!(file = fopen(src, "w"))) {
-        printf("Error: %s file creating failure", src);
+    if (fopen_s(&file, path, "rb")) {
+        printf("Ошибка! Не удалось открыть файл %s", path);
         exit(EXIT_FAILURE);
     }
 
-    return file;
-}
+    printf("Содержимое бинарного файла %s:\n", path);
 
-FILE *openTxtFile(const char *src) {
-    FILE *file;
-
-    if (!(file = fopen(src, "r"))) {
-        printf("Error: %s file opening failure", src);
-        exit(EXIT_FAILURE);
+    int len = 0;
+    while (fread(&len, sizeof(int), 1, file)) {
+        for (int i = 0; i < len; i++) printf("%c", fgetc(file));
+        printf("\n");
     }
 
-    return file;
+    fclose(file);
 }
 
-FilesMetadata *getTxtFileMetadata(FILE *file) {
-    FilesMetadata *metadata = new FilesMetadata();
+File_metadata* get_txt_file_metadata(FILE* file, const char *src) {
+    File_metadata* metadata = new File_metadata();
 
-    int stringLen = 0, stringOffset = 0;
-    fseek(file, 0, SEEK_SET);
+    int len = 0, offset = 0;
+    fseek(file, offset, SEEK_SET);
 
-    while (true) {
-        char symbol = fgetc(file);
+    while(true) {
+        char symbol;
+        fread(&symbol, sizeof(char), 1, file);
 
         if (symbol != STR_DELIMITER && symbol != EOF) {
-            stringLen++;
+            len++;
             continue;
         }
 
-        if (stringLen == 0) break;
+        if (len == 0) break;
 
-        pushString(metadata, FileString(file, stringOffset, stringLen));
+        push_string(metadata, File_string(src, offset, len));
 
-        stringOffset += stringLen + 1;
-        stringLen = 0;
+        offset += len + 2;
+        len = 0;
 
         if (symbol == EOF)
             break;
@@ -234,281 +195,315 @@ FilesMetadata *getTxtFileMetadata(FILE *file) {
     return metadata;
 }
 
-char *readStringFromTxt(FileString *fileString) {
-    char *str = new char[fileString->len + 1];
+char* read_string(FILE* file, File_string* file_string) {
+    char* str = new char[file_string->len + 1];
 
-    fseek(fileString->file, fileString->offset, SEEK_SET);
-    fgets(str, fileString->len + 1, fileString->file);
+    fseek(file, file_string->offset, SEEK_SET);
+    fread(str, sizeof(char), file_string->len, file);
 
-    str[fileString->len] = '\0';
+    str[file_string->len] = '\0';
 
     return str;
 }
 
-void writeStringToTxt(FILE *destFile, char *str) {
-    fputs(str, destFile);
-    fputc('\n', destFile);
-}
+void sort_metadata_by_merge(File_metadata* metadata,
+                         bool sort_by_ascending, int left_bound, int right_bound) {
+    if (left_bound + 1 >= right_bound) return;
 
-void sortMetadataByMerge(FilesMetadata *metadata,
-                                   bool (*predicate)(FileString *,
-                                                     FileString *)) {
-    int blockSize, blockStartPos, leftBorder, middleBorder, rightBorder,
-            leftBlockIter, rightBlockIter;
+    int middle_bound = (left_bound + right_bound) / 2;
 
-    for (blockSize = 1; blockSize < metadata->len; blockSize *= 2) {
-        for (blockStartPos = 0; blockStartPos < metadata->len - blockSize;
-             blockStartPos += 2 * blockSize) {
-            leftBlockIter = 0;
-            rightBlockIter = 0;
+    // Тривиальный случай
 
-            leftBorder = blockStartPos;
-            middleBorder = blockStartPos + blockSize;
-            rightBorder = blockStartPos + 2 * blockSize;
-            rightBorder = rightBorder < metadata->len ? rightBorder : metadata->len;
+    sort_metadata_by_merge(metadata, sort_by_ascending, left_bound, middle_bound);
+    sort_metadata_by_merge(metadata, sort_by_ascending, middle_bound, right_bound);
 
-            FilesMetadata *metadataBlock = new FilesMetadata(2 * blockSize);
+    // Декомпозиция общего случая
 
-            while (leftBorder + leftBlockIter < middleBorder &&
-                   middleBorder + rightBlockIter < rightBorder) {
-                if (predicate(&metadata->strings[leftBorder + leftBlockIter],
-                              &metadata->strings[middleBorder + rightBlockIter])) {
-                    metadataBlock->strings[leftBlockIter + rightBlockIter] =
-                            metadata->strings[leftBorder + leftBlockIter];
-                    leftBlockIter++;
-                } else {
-                    metadataBlock->strings[leftBlockIter + rightBlockIter] =
-                            metadata->strings[middleBorder + rightBlockIter];
-                    rightBlockIter++;
-                }
-            }
+    File_metadata* metadata_block = new File_metadata(right_bound - left_bound);
 
-            while (leftBorder + leftBlockIter < middleBorder) {
-                metadataBlock->strings[leftBlockIter + rightBlockIter] =
-                        metadata->strings[leftBorder + leftBlockIter];
-                leftBlockIter++;
-            }
+    int left_i = 0;
+    int right_i = 0;
 
-            while (middleBorder + rightBlockIter < rightBorder) {
-                metadataBlock->strings[leftBlockIter + rightBlockIter] =
-                        metadata->strings[middleBorder + rightBlockIter];
-                rightBlockIter++;
-            }
+    while (left_bound + left_i < middle_bound &&
+           middle_bound + right_i < right_bound) {
 
-            for (int mergeIter = 0; mergeIter < leftBlockIter + rightBlockIter; mergeIter++) {
-                metadata->strings[leftBorder + mergeIter] = metadataBlock->strings[mergeIter];
-            }
-
-            delete metadataBlock;
+        if (!sort_by_ascending && metadata->strings[left_bound + left_i].len > metadata->strings[middle_bound + right_i].len) {
+            metadata_block->strings[left_i + right_i] =
+                    metadata->strings[left_bound + left_i];
+            left_i++;
+        }
+        else if (sort_by_ascending && metadata->strings[left_bound + left_i].len < metadata->strings[middle_bound + right_i].len) {
+            metadata_block->strings[left_i + right_i] =
+                    metadata->strings[left_bound + left_i];
+            left_i++;
+        }
+        else {
+            metadata_block->strings[left_i + right_i] =
+                    metadata->strings[middle_bound + right_i];
+            right_i++;
         }
     }
-}
 
-bool isLess(FileString *string_a, FileString *string_b) {
-    return string_a->len < string_b->len;
-}
-
-bool isGreater(FileString *string_a, FileString *string_b) {
-    return string_a->len > string_b->len;
-}
-
-void sortByDescending(FilesMetadata *metadata) {
-    sortMetadataByMerge(metadata, isGreater);
-}
-
-void sortByAscending(FilesMetadata *metadata) {
-    sortMetadataByMerge(metadata, isLess);
-}
-
-void sortFilesStrings(TXT_FILE_SIGNATURE _, const char *dest,
-                      void (*sortMetadata)(FilesMetadata *), ...) {
-    va_list vaList;
-    va_start(vaList, sortMetadata);
-
-    FILE *srcFiles[100];
-    int srcFilesNum = 0;
-    FilesMetadata *metadata = new FilesMetadata();
-
-    const char *src;
-    while ((src = va_arg(vaList, const char *)) != NULL) {
-        srcFiles[srcFilesNum] = openTxtFile(src);
-        concatFileMetadata(metadata, getTxtFileMetadata(srcFiles[srcFilesNum]));
-        srcFilesNum++;
+    while (left_bound + left_i < middle_bound) {
+        metadata_block->strings[left_i + right_i] =
+                metadata->strings[left_bound + left_i];
+        left_i++;
     }
 
-    sortMetadata(metadata);
-    FILE *destFile = createTxtFile(dest);
+    while (middle_bound + right_i < right_bound) {
+        metadata_block->strings[left_i + right_i] =
+                metadata->strings[middle_bound + right_i];
+        right_i++;
+    }
+
+    for (int i = 0; i < left_i + right_i; i++) {
+        metadata->strings[left_bound + i] = metadata_block->strings[i];
+    }
+
+    delete metadata_block;
+}
+
+void sort_by_descending(File_metadata* metadata) {
+    sort_metadata_by_merge(metadata, false, 0, metadata->len);
+}
+
+void sort_by_ascending(File_metadata* metadata) {
+    sort_metadata_by_merge(metadata, true, 0, metadata->len);
+}
+
+void sort_files_strings(TXT_FILE_SIGNATURE _, const char* dest,
+                      void (*sort_metadata)(File_metadata*), ...) {
+    va_list args;
+    va_start(args, sort_metadata);
+
+    File_metadata* metadata = new File_metadata[1];
+
+    const char* src;
+    while ((src = va_arg(args, const char*)) != NULL) {
+        FILE *file;
+        if (fopen_s(&file, src, "r")) {
+            printf("Ошибка! Не удалось открыть файл %s", src);
+            exit(EXIT_FAILURE);
+        }
+
+        concat_files_metadata(metadata, get_txt_file_metadata(file, src));
+    }
+
+    sort_metadata(metadata);
+
+    FILE* dest_file;
+    if (fopen_s(&dest_file, dest, "w")) {
+        printf("Ошибка! Не удалось создать файл %s", src);
+        exit(EXIT_FAILURE);
+    }
 
     for (int i = 0; i < metadata->len; i++) {
-        char *str = readStringFromTxt(&metadata->strings[i]);
-        writeStringToTxt(destFile, str);
+        File_string file_string = metadata->strings[i];
+
+        FILE *file;
+        if (fopen_s(&file, file_string.path, "r")) {
+            printf("Ошибка! Не удалось открыть файл %s", src);
+            exit(EXIT_FAILURE);
+        }
+
+        char* str = read_string(file, &file_string);
+        fwrite(str, sizeof(char), strlen(str), dest_file);
+        fwrite(&STR_DELIMITER, sizeof(char), 1, dest_file);
     }
 
-    fclose(destFile);
-    for (int i = 0; i < srcFilesNum; i++)
-        fclose(srcFiles[i]);
-
-    delete metadata;
-
-    va_end(vaList);
+    va_end(args);
+    fclose(dest_file);
 }
 
-void sortFilesStrings(BIN_FILE_SIGNATURE _, const char *dest,
-                      void (*sortMetadata)(FilesMetadata *), ...) {
-    va_list vaList;
-    va_start(vaList, sortMetadata);
+void sort_files_strings(BIN_FILE_SIGNATURE _, const char* dest,
+                      void (*sort_metadata)(File_metadata*), ...) {
+    va_list args;
+    va_start(args, sort_metadata);
 
-    FILE *srcFiles[100];
-    int srcFilesNum = 0;
-    FilesMetadata *metadata = new FilesMetadata();
+    File_metadata* metadata = new File_metadata[1];
 
-    const char *src;
-    while ((src = va_arg(vaList, const char *)) != NULL) {
-        srcFiles[srcFilesNum] = openBinFile(src);
-        concatFileMetadata(metadata, getBinFileMetadata(srcFiles[srcFilesNum]));
-        srcFilesNum++;
+    const char* src;
+    while ((src = va_arg(args, const char*)) != NULL) {
+        FILE *file;
+        if (fopen_s(&file, src, "rb")) {
+            printf("Ошибка! Не удалось открыть файл %s", src);
+            exit(EXIT_FAILURE);
+        }
+
+        concat_files_metadata(metadata, get_bin_file_metadata(file, src));
     }
 
-    sortMetadata(metadata);
-    FILE *destFile = createBinFile(dest);
+    sort_metadata(metadata);
+
+    FILE* dest_file;
+    if (fopen_s(&dest_file, dest, "wb")) {
+        printf("Ошибка! Не удалось создать файл %s", src);
+        exit(EXIT_FAILURE);
+    }
 
     for (int i = 0; i < metadata->len; i++) {
-        char *str = readStringFromBin(&metadata->strings[i]);
-        writeStringToBin(destFile, str);
+        File_string file_string = metadata->strings[i];
+
+        FILE *file;
+        if (fopen_s(&file, file_string.path, "rb")) {
+            printf("Ошибка! Не удалось открыть файл %s", src);
+            exit(EXIT_FAILURE);
+        }
+
+        char* str = read_string(file, &file_string);
+        int str_len = strlen(str);
+
+        fwrite(&str_len, sizeof(int), 1, dest_file);
+        fwrite(str, sizeof(char), str_len, dest_file);
     }
 
-    fclose(destFile);
-    for (int i = 0; i < srcFilesNum; i++)
-        fclose(srcFiles[i]);
-
-    delete metadata;
-
-    va_end(vaList);
+    va_end(args);
+    fclose(dest_file);
 }
 
-void buildTxtTestData(const char *dist, ...) {
-    va_list vaList;
-    va_start(vaList, dist);
+void build_txt_test_data(const char* dest, ...) {
+    va_list args;
+    va_start(args, dest);
 
-    FILE *file = createTxtFile(dist);
-    char *str;
-    while ((str = va_arg(vaList, char *)) != NULL) {
-        writeStringToTxt(file, str);
+    FILE *file;
+    if (fopen_s(&file, dest, "w")) {
+        printf("Ошибка! Не удалось создать файл %s", dest);
+        exit(EXIT_FAILURE);
+    }
+
+    char* str;
+    while ((str = va_arg(args, char*)) != NULL) {
+        fwrite(str, sizeof(char), strlen(str), file);
+        fwrite(&STR_DELIMITER, sizeof(char), 1, file);
+    }
+
+    va_end(args);
+    fclose(file);
+}
+
+void build_bin_test_data(const char* dest, ...) {
+    va_list vaList;
+    va_start(vaList, dest);
+
+    FILE *file;
+    if (fopen_s(&file, dest, "wb")) {
+        printf("Ошибка! Не удалось создать файл %s", dest);
+        exit(EXIT_FAILURE);
+    }
+
+    char* str;
+    while ((str = va_arg(vaList, char*)) != NULL) {
+        int strLen = strlen(str);
+
+        fwrite(&strLen, sizeof(int), 1, file);
+        fwrite(str, sizeof(char), strLen, file);
     }
 
     fclose(file);
     va_end(vaList);
 }
 
-void buildBinTestData(const char *dist, ...) {
-    va_list vaList;
-    va_start(vaList, dist);
+void test_txt() {
+    build_txt_test_data("tests/txt/test1_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output1_1.txt", sort_by_descending, "tests/txt/test1_1_1.txt", NULL);
 
-    FILE *file = createBinFile(dist);
-    char *str;
-    while ((str = va_arg(vaList, char *)) != NULL) {
-        writeStringToBin(file, str);
-    }
+    build_txt_test_data("tests/txt/test1_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    build_txt_test_data("tests/txt/test1_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    build_txt_test_data("tests/txt/test1_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output1_2.txt", sort_by_descending, "tests/txt/test1_2_1.txt",
+        "tests/txt/test1_2_2.txt", "tests/txt/test1_2_3.txt",
+        NULL);
 
-    fclose(file);
-    va_end(vaList);
+    build_txt_test_data("tests/txt/test1_3_1.txt", "", NULL);
+    build_txt_test_data("tests/txt/test1_3_2.txt", "sdf", "q", "werinwi ai", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output1_3.txt", sort_by_descending, "tests/txt/test1_3_1.txt",
+        "tests/txt/test1_3_2.txt", NULL);
+
+    build_txt_test_data("tests/txt/test1_4_1.txt", "", NULL);
+    build_txt_test_data("tests/txt/test1_4_2.txt", "", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output1_4.txt", sort_by_descending, "tests/txt/test1_4_1.txt",
+        "tests/txt/test1_4_2.txt", NULL);
+
+    build_txt_test_data("tests/txt/test2_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output2_1.txt", sort_by_ascending, "tests/txt/test2_1_1.txt", NULL);
+
+    build_txt_test_data("tests/txt/test2_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    build_txt_test_data("tests/txt/test2_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    build_txt_test_data("tests/txt/test2_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output2_2.txt", sort_by_ascending, "tests/txt/test2_2_1.txt",
+        "tests/txt/test2_2_2.txt", "tests/txt/test2_2_3.txt",
+        NULL);
+
+    build_txt_test_data("tests/txt/test2_3_1.txt", "", NULL);
+    build_txt_test_data("tests/txt/test2_3_2.txt", "sdf", "q", "werinwi ai", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output2_3.txt", sort_by_ascending, "tests/txt/test2_3_1.txt",
+        "tests/txt/test2_3_2.txt", NULL);
+
+    build_txt_test_data("tests/txt/test2_4_1.txt", "", NULL);
+    build_txt_test_data("tests/txt/test2_4_2.txt", "", NULL);
+    sort_files_strings(TXT_FILE, "tests/txt/output2_4.txt", sort_by_ascending, "tests/txt/test2_4_1.txt",
+        "tests/txt/test2_4_2.txt", NULL);
 }
 
-void testTxt() {
-    buildTxtTestData("tests/txt/test1_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output1_1.txt", sortByDescending, "tests/txt/test1_1_1.txt", NULL);
+void test_bin() {
+    build_bin_test_data("tests/bin/test1_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output1_1.bin", sort_by_descending, "tests/bin/test1_1_1.bin", NULL);
 
-    buildTxtTestData("tests/txt/test1_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    buildTxtTestData("tests/txt/test1_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    buildTxtTestData("tests/txt/test1_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output1_2.txt", sortByDescending, "tests/txt/test1_2_1.txt",
-                     "tests/txt/test1_2_2.txt", "tests/txt/test1_2_3.txt",
-                     NULL);
+    print_bin_file("tests/bin/output1_1.bin");
 
-    buildTxtTestData("tests/txt/test1_3_1.txt", "", NULL);
-    buildTxtTestData("tests/txt/test1_3_2.txt", "sdf", "q", "werinwi ai", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output1_3.txt", sortByDescending, "tests/txt/test1_3_1.txt",
-                     "tests/txt/test1_3_2.txt", NULL);
-
-    buildTxtTestData("tests/txt/test1_4_1.txt", "", NULL);
-    buildTxtTestData("tests/txt/test1_4_2.txt", "", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output1_4.txt", sortByDescending, "tests/txt/test1_4_1.txt",
-                     "tests/txt/test1_4_2.txt", NULL);
-
-    buildTxtTestData("tests/txt/test2_1_1.txt", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output2_1.txt", sortByAscending, "tests/txt/test2_1_1.txt", NULL);
-
-    buildTxtTestData("tests/txt/test2_2_1.txt", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    buildTxtTestData("tests/txt/test2_2_2.txt", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    buildTxtTestData("tests/txt/test2_2_3.txt", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output2_2.txt", sortByAscending, "tests/txt/test2_2_1.txt",
-                     "tests/txt/test2_2_2.txt", "tests/txt/test2_2_3.txt",
-                     NULL);
-
-    buildTxtTestData("tests/txt/test2_3_1.txt", "", NULL);
-    buildTxtTestData("tests/txt/test2_3_2.txt", "sdf", "q", "werinwi ai", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output2_3.txt", sortByAscending, "tests/txt/test2_3_1.txt",
-                     "tests/txt/test2_3_2.txt", NULL);
-
-    buildTxtTestData("tests/txt/test2_4_1.txt", "", NULL);
-    buildTxtTestData("tests/txt/test2_4_2.txt", "", NULL);
-    sortFilesStrings(TXT_FILE, "tests/txt/output2_4.txt", sortByAscending, "tests/txt/test2_4_1.txt",
-                     "tests/txt/test2_4_2.txt", NULL);
-}
-
-void testBin() {
-    buildBinTestData("tests/bin/test1_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output1_1.bin", sortByDescending, "tests/bin/test1_1_1.bin", NULL);
-
-    buildBinTestData("tests/bin/test1_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    buildBinTestData("tests/bin/test1_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    buildBinTestData("tests/bin/test1_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output1_2.bin", sortByDescending, "tests/bin/test1_2_1.bin",
+    build_bin_test_data("tests/bin/test1_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    build_bin_test_data("tests/bin/test1_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    build_bin_test_data("tests/bin/test1_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output1_2.bin", sort_by_descending, "tests/bin/test1_2_1.bin",
                      "tests/bin/test1_2_2.bin", "tests/bin/test1_2_3.bin",
                      NULL);
 
-    buildBinTestData("tests/bin/test1_3_1.bin", "", NULL);
-    buildBinTestData("tests/bin/test1_3_2.bin", "sdf", "q", "werinwi ai", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output1_3.bin", sortByDescending, "tests/bin/test1_3_1.bin",
+    print_bin_file("tests/bin/output1_2.bin");
+
+    build_bin_test_data("tests/bin/test1_3_1.bin", "", NULL);
+    build_bin_test_data("tests/bin/test1_3_2.bin", "sdf", "q", "werinwi ai", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output1_3.bin", sort_by_descending, "tests/bin/test1_3_1.bin",
                      "tests/bin/test1_3_2.bin", NULL);
 
-    buildBinTestData("tests/bin/test1_4_1.bin", "", NULL);
-    buildBinTestData("tests/bin/test1_4_2.bin", "", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output1_4.bin", sortByDescending, "tests/bin/test1_4_1.bin",
+    print_bin_file("tests/bin/output1_3.bin");
+
+    build_bin_test_data("tests/bin/test1_4_1.bin", "", NULL);
+    build_bin_test_data("tests/bin/test1_4_2.bin", "", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output1_4.bin", sort_by_descending, "tests/bin/test1_4_1.bin",
                      "tests/bin/test1_4_2.bin", NULL);
 
-    buildBinTestData("tests/bin/test2_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output2_1.bin", sortByAscending, "tests/bin/test2_1_1.bin", NULL);
+    print_bin_file("tests/bin/output1_4.bin");
 
-    buildBinTestData("tests/bin/test2_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
-    buildBinTestData("tests/bin/test2_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
-    buildBinTestData("tests/bin/test2_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output2_2.bin", sortByAscending, "tests/bin/test2_2_1.bin",
+    build_bin_test_data("tests/bin/test2_1_1.bin", "ssss", "aaaa", "dddd", "bbbb", "0000", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output2_1.bin", sort_by_ascending, "tests/bin/test2_1_1.bin", NULL);
+
+    print_bin_file("tests/bin/output2_1.bin");
+
+    build_bin_test_data("tests/bin/test2_2_1.bin", "dfdwebhbw", "nb ewf", "no; o23h  9dsdfnq", "3sq<", "o", NULL);
+    build_bin_test_data("tests/bin/test2_2_2.bin", "werwb", "023 sdfaaa", "q", ",.", "3f", NULL);
+    build_bin_test_data("tests/bin/test2_2_3.bin", "sdasdff", "8q", "werinwi ai", "[[[hwe323(()", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output2_2.bin", sort_by_ascending, "tests/bin/test2_2_1.bin",
                      "tests/bin/test2_2_2.bin", "tests/bin/test2_2_3.bin",
                      NULL);
 
-    buildBinTestData("tests/bin/test2_3_1.bin", "", NULL);
-    buildBinTestData("tests/bin/test2_3_2.bin", "sdf", "q", "werinwi ai", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output2_3.bin", sortByAscending, "tests/bin/test2_3_1.bin",
+    print_bin_file("tests/bin/output2_2.bin");
+
+    build_bin_test_data("tests/bin/test2_3_1.bin", "", NULL);
+    build_bin_test_data("tests/bin/test2_3_2.bin", "sdf", "q", "werinwi ai", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output2_3.bin", sort_by_ascending, "tests/bin/test2_3_1.bin",
                      "tests/bin/test2_3_2.bin", NULL);
 
-    buildBinTestData("tests/bin/test2_4_1.bin", "", NULL);
-    buildBinTestData("tests/bin/test2_4_2.bin", "", NULL);
-    sortFilesStrings(BIN_FILE, "tests/bin/output2_4.bin", sortByAscending, "tests/bin/test2_4_1.bin",
+    print_bin_file("tests/bin/output2_3.bin");
+
+    build_bin_test_data("tests/bin/test2_4_1.bin", "", NULL);
+    build_bin_test_data("tests/bin/test2_4_2.bin", "", NULL);
+    sort_files_strings(BIN_FILE, "tests/bin/output2_4.bin", sort_by_ascending, "tests/bin/test2_4_1.bin",
                      "tests/bin/test2_4_2.bin", NULL);
+
+    print_bin_file("tests/bin/output2_4.bin");
 }
 
 void test() {
-    testTxt();
-    testBin();
-    /*
-                    testX_X_X.xxx
-                        ^ ^ ^
-                        | | |
-                        | | +--------------------------------+
-                        | +----------------------+           |
-    1: sort by descending; 2: sort by ascending; |           |
-                                             Number of test; |
-                                                         Number of test file;
-     */
+    test_txt();
+    test_bin();
 }
