@@ -54,7 +54,7 @@ File_metadata *get_bin_file_metadata(FILE *, const char *);
 // Получение матаданных текстового файла.
 File_metadata *get_txt_file_metadata(FILE *, const char *);
 
-// Прочтение строки из файла, используя данные о строке.
+// Чтение строки из файла, используя данные о строке.
 char *read_string(FILE *, File_string *);
 
 // Сортировка метаданных методом слияния.
